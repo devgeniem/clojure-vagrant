@@ -1,0 +1,83 @@
+
+#!/bin/bash
+#!/bin/bash
+#
+
+sudo apt-get install software-properties-common python-software-properties
+sudo add-apt-repository ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install oracle-java7-installer
+
+cd $HOME
+
+apt-get install git build-essential libreadline-dev  zlib1g-dev libpcre3 libpcre3-dev libncurses5-dev libpcre3-dev libssl-dev perl make -y
+
+git clone https://github.com/devgeniem/ngx_openresty.git
+
+cd $HOME/ngx_openresty/packages/ngx_pagespeed-release-1.9.32.3-beta/
+wget https://dl.google.com/dl/page-speed/psol/1.9.32.3.tar.gz
+tar -xzvf 1.9.32.3.tar.gz # expands to psol/
+
+cd $HOME/ngx_openresty/packages
+git clone https://github.com/nginx-clojure/nginx-clojure.git
+
+cd $HOME/ngx_openresty
+
+#--with-luajit \
+
+./configure --prefix=/etc \
+--with-http_ssl_module \
+--with-http_realip_module \
+--with-http_gzip_static_module \
+--with-http_spdy_module \
+--with-http_stub_status_module \
+--with-http_secure_link_module \
+--add-module=packages/nginx-upload-progress-module-0.9.1 \
+--add-module=packages/nginx-http-auth-digest-master \
+--add-module=packages/ngx_pagespeed-release-1.9.32.3-beta \
+--add-module=packages/nginx-upstream-fair-master \
+--add-module=packages/nginx-clojure/src/c \
+-j4
+
+make
+
+make install
+
+echo "PATH=/etc/nginx/sbin:$PATH;export PATH" >> $HOME/.bashrc 
+cp /vagrant/nginx/nginx-resty.conf /etc/nginx/conf/nginx.conf
+mkdir /var/log/nginx
+mkdir /var/cache/ngx_pagespeed
+
+#install some lua libs
+cd /etc/lualib/resty
+sudo curl -O https://raw.githubusercontent.com/cloudflare/lua-resty-cookie/master/lib/resty/cookie.lua
+sudo curl -O https://raw.githubusercontent.com/craigmj/json4lua/master/json/json.lua
+
+
+echo "Installing mongod"
+
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
+sudo apt-get update
+sudo apt-get install -y mongodb-org
+sudo apt-get install -y mongodb-org=3.0.3 mongodb-org-server=3.0.3 mongodb-org-shell=3.0.3 mongodb-org-mongos=3.0.3 mongodb-org-tools=3.0.3
+sudo service mongod start
+
+echo "Installing redis..."
+
+sudo apt-get update -y
+
+sudo apt-get install -y redis-server
+
+
+echo "Installing nvm"
+
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.25.2/install.sh | bash
+
+echo "Installing iojs..."
+
+nvm install iojs-v2.0.2
+npm install -g node-gyp
+
+
+sudo apt-get install g++
